@@ -591,6 +591,9 @@
         tableDetailPanel.classList.remove('hidden');
         initLucideIcons();
         notifyParentHeight();
+
+        // ページ上部へスクロールして詳細パネルを見える位置にする
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
     window.clearTableDetail = function() {

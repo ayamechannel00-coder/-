@@ -1,0 +1,1191 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#090d16">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="危険物倍数計算機">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230f172a'/%3E%3Cpath d='M34 10c-2 8-10 11-10 21a12 12 0 0 0 24 0c0-7-5-12-9-16-1 3-3 5-5 5 1-4 0-8 0-10z' fill='%23f59e0b'/%3E%3C/svg%3E">
+    <title>危険物倍数計算機 & 指定数量一覧</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        /* HTML/Bodyの余白を完全にリセット */
+        html, body {
+            margin: 0;
+            padding: 0;
+            background-color: #090d16;
+            overflow-x: hidden;
+            box-sizing: border-box;
+        }
+        *, *:before, *:after {
+            box-sizing: inherit;
+        }
+        /* スマホでの入力時自動ズームを防ぐためフォントサイズを16px以上に固定 */
+        input, select, textarea {
+            font-size: 16px !important;
+        }
+        /* 数値入力欄のスピンボタン（上下矢印）を削除 */
+        input[type="number"]::-webkit-inner-spin-button,
+        input[type="number"]::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        input[type="number"] {
+            -moz-appearance: textfield;
+            appearance: textfield;
+        }
+        /* Custom scrollbar for dark UI */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #090d16;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #1e293b;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #334155;
+        }
+    </style>
+</head>
+<body class="font-sans text-slate-100 antialiased selection:bg-amber-500 selection:text-slate-950">
+    <div id="appContainer" class="max-w-md mx-auto p-2 sm:p-4 space-y-4">
+
+        <!-- ================= TAB 1: CALCULATOR (計算機) ================= -->
+        <div id="tabCalcContent" class="space-y-4">
+            <!-- 1. Fixed Top Header for Calc Tab -->
+            <header id="calcHeader" class="fixed top-0 left-0 right-0 z-50 max-w-md mx-auto px-2 sm:px-4 pt-2 space-y-2 bg-transparent pointer-events-none">
+                <!-- Status & Progress Summary Card -->
+                <div class="pointer-events-auto bg-[#0f172a] border border-slate-800 rounded-2xl p-4 shadow-2xl relative overflow-hidden">
+                    <div id="summaryGlow" class="absolute -top-10 -right-10 w-32 h-32 bg-emerald-500/10 rounded-full blur-2xl pointer-events-none transition-colors duration-500"></div>
+
+                    <div class="flex items-start justify-between mb-2 gap-2">
+                        <div class="flex items-center space-x-2.5 min-w-0">
+                            <div class="w-9 h-9 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 flex-shrink-0">
+                                <i data-lucide="flame" class="w-5 h-5"></i>
+                            </div>
+                            <div class="min-w-0">
+                                <span class="text-xs text-slate-400 font-medium block truncate">消防法指定数量 合計倍数</span>
+                                <div id="mainTotalMultiplier" class="text-2xl font-black text-emerald-400 mt-0.5 font-mono">
+                                    0.000 <span class="text-xs font-normal text-slate-400">倍</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-1.5 flex-shrink-0">
+                            <button id="openSimpleCalcBtn" type="button" onclick="openSimpleCalc()" class="p-2 rounded-xl border border-amber-500/40 bg-amber-500/10 hover:bg-amber-500/20 active:scale-95 text-amber-400 transition shadow" title="電卓を開く">
+                                <i data-lucide="calculator" class="w-4 h-4"></i>
+                            </button>
+                            <button id="resetAllBtn" type="button" class="px-3 py-1.5 rounded-xl border border-slate-700 bg-slate-900/80 hover:bg-slate-800 active:scale-95 text-xs font-bold text-slate-300 transition flex items-center gap-1.5 shadow">
+                                <i data-lucide="rotate-ccw" class="w-3.5 h-3.5 text-slate-400"></i> 全リセット
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center justify-between text-xs text-slate-400 font-medium mb-1.5 mt-3">
+                        <span>規制基準 (1.0倍)</span>
+                        <span id="progressPercentage" class="font-bold text-slate-300">0%</span>
+                    </div>
+
+                    <!-- Progress Bar -->
+                    <div class="w-full h-2 bg-slate-950 rounded-full overflow-hidden border border-slate-800/80">
+                        <div id="progressBar" class="h-full bg-emerald-500 rounded-full transition-all duration-500" style="width: 0%"></div>
+                    </div>
+
+                    <!-- Regulation Notice -->
+                    <div id="regulationNotice" class="mt-3.5 p-2.5 rounded-xl text-xs flex items-center gap-2 bg-transparent text-emerald-400 font-medium">
+                        <i data-lucide="check-circle-2" class="w-4 h-4 flex-shrink-0"></i>
+                        <span>指定数量の0.2倍未満です。特別な届出は不要です。</span>
+                    </div>
+                </div>
+
+                <!-- Shared Navigation Tabs -->
+                <div class="pointer-events-auto flex bg-slate-950/95 p-1 rounded-xl border border-slate-800 text-xs font-bold shadow-xl backdrop-blur-md">
+                    <button type="button" onclick="switchTab('calc')" class="flex-1 py-2 rounded-lg text-amber-400 bg-slate-800 border border-slate-700 transition flex items-center justify-center gap-1.5 shadow">
+                        <i data-lucide="calculator" class="w-4 h-4"></i> 倍数計算機
+                    </button>
+                    <button type="button" onclick="switchTab('table')" class="flex-1 py-2 rounded-lg text-slate-400 hover:text-slate-200 transition flex items-center justify-center gap-1.5">
+                        <i data-lucide="book-open" class="w-4 h-4"></i> 指定数量一覧表
+                    </button>
+                </div>
+            </header>
+
+            <!-- 2. Form & List Content -->
+            <div class="space-y-4 pt-56">
+                <!-- Input & Registration Card -->
+                <div class="bg-[#0f172a] border border-slate-800 rounded-2xl p-4 shadow-xl">
+                    <div class="flex items-center justify-between mb-4 border-b border-slate-800/80 pb-3">
+                        <h2 class="text-sm font-bold text-slate-100 flex items-center gap-2">
+                            <i data-lucide="plus-circle" class="w-4 h-4 text-amber-400"></i>
+                            <span id="formTitleText">危険物の追加登録</span>
+                        </h2>
+                        <!-- Mode Switcher -->
+                        <div class="flex bg-slate-950 p-1 rounded-xl border border-slate-800 text-xs">
+                            <button id="modeSelectBtn" type="button" class="px-3 py-1 rounded-lg font-bold text-slate-950 bg-amber-400 transition shadow">
+                                リスト選択
+                            </button>
+                            <button id="modeManualBtn" type="button" class="px-3 py-1 rounded-lg font-medium text-slate-400 hover:text-slate-200 transition">
+                                手動入力
+                            </button>
+                        </div>
+                    </div>
+
+                    <form id="addForm" class="space-y-4">
+                        <!-- Select Mode Input -->
+                        <div id="selectModeGroup" class="space-y-1.5">
+                            <label class="block text-xs font-bold text-slate-300">危険物リストから選択</label>
+                            <select id="presetSelect" class="w-full bg-slate-950 border border-slate-700/80 rounded-xl px-3.5 py-3 text-slate-100 focus:outline-none focus:border-amber-400">
+                                <option value="">-- 品名を選択してください --</option>
+                            </select>
+                        </div>
+
+                        <!-- Manual Mode Input -->
+                        <div id="manualModeGroup" class="space-y-1.5 hidden">
+                            <div class="flex items-center justify-between">
+                                <label class="block text-xs font-bold text-slate-300">品名（任意・未入力でも計算可）</label>
+                                <span id="autoDetectBadge" class="hidden text-[10px] text-amber-400 bg-amber-950/60 border border-amber-800/60 px-1.5 py-0.5 rounded">
+                                    <i data-lucide="sparkles" class="w-2.5 h-2.5 inline"></i> 自動判定完了
+                                </span>
+                            </div>
+                            <input type="text" id="manualNameInput" placeholder="空欄でもOK（例: アセトン, 動植物油類等）" 
+                                   inputmode="kana" lang="ja" autocomplete="off"
+                                   class="w-full bg-slate-950 border border-slate-700/80 rounded-xl px-3.5 py-3 text-slate-100 focus:outline-none focus:border-amber-400">
+                        </div>
+
+                        <!-- Auto Detected Info Spec Banner -->
+                        <div id="specDisplay" class="bg-slate-950/80 border border-slate-800 rounded-xl p-2.5 text-xs text-slate-300 flex items-center justify-between">
+                            <div>
+                                <span id="specCategory" class="font-bold text-amber-400 block">--</span>
+                                <span id="specGrade" class="text-[11px] text-slate-400">危険等級: --</span>
+                            </div>
+                            <div class="text-right font-mono font-bold text-slate-200">
+                                <span id="specQuantity">標準指定数量: --</span>
+                            </div>
+                        </div>
+
+                        <!-- Storage Amount & Unit -->
+                        <div class="grid grid-cols-5 gap-2">
+                            <div class="col-span-3 space-y-1.5">
+                                <label class="block text-xs font-bold text-slate-300">貯留・取扱数量</label>
+                                <input type="number" id="amountInput" step="any" min="0" placeholder="例: 200" required
+                                       class="w-full bg-slate-950 border border-slate-700/80 rounded-xl px-3.5 py-3 text-slate-100 font-bold focus:outline-none focus:border-amber-400">
+                            </div>
+
+                            <div class="col-span-2 space-y-1.5">
+                                <label class="block text-xs font-bold text-slate-300">単位</label>
+                                <select id="unitSelect" class="w-full bg-slate-950 border border-slate-700/80 rounded-xl px-3 py-3 text-slate-100 font-medium focus:outline-none focus:border-amber-400">
+                                    <option value="L">L (リットル)</option>
+                                    <option value="kg">kg (キログラム)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Specific Gravity & Designated Quantity Grid -->
+                        <div class="grid grid-cols-2 gap-2">
+                            <div class="space-y-1.5">
+                                <label class="block text-xs font-bold text-slate-300 flex items-center justify-between">
+                                    <span>比重 (kg/L)</span>
+                                    <i data-lucide="scale" class="w-3 h-3 text-amber-400"></i>
+                                </label>
+                                <input type="number" id="specificGravityInput" step="any" min="0.01" value="1.00" placeholder="例: 0.75" required
+                                       class="w-full bg-slate-950 border border-slate-700/80 rounded-xl px-3.5 py-2.5 text-slate-100 font-mono font-bold focus:outline-none focus:border-amber-400">
+                            </div>
+
+                            <div class="space-y-1.5">
+                                <label class="block text-xs font-bold text-slate-300 flex items-center justify-between">
+                                    <span>指定数量</span>
+                                    <i data-lucide="edit-2" class="w-3 h-3 text-amber-400"></i>
+                                </label>
+                                <input type="number" id="customDesignatedInput" step="any" min="0.01" placeholder="指定数量" required
+                                       class="w-full bg-slate-950 border border-slate-700/80 rounded-xl px-3.5 py-2.5 text-slate-100 font-mono font-bold focus:outline-none focus:border-amber-400">
+                            </div>
+                        </div>
+
+                        <!-- Live Conversion Preview -->
+                        <div id="conversionPreview" class="bg-slate-950/60 border border-slate-800/80 rounded-xl px-3 py-2 text-[11px] text-slate-400 font-mono flex items-center justify-between">
+                            <span>換算: <strong id="convertedAmountText" class="text-slate-200">--</strong></span>
+                            <span>予想倍数: <strong id="previewMultiplierText" class="text-amber-400">0.0000 倍</strong></span>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="flex gap-2 pt-1">
+                            <button type="submit" id="submitBtn" class="w-full py-3.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-base shadow-lg transition flex items-center justify-center gap-2">
+                                <i data-lucide="plus" class="w-5 h-5 stroke-[3]"></i> <span id="submitBtnText">計算リストに追加</span>
+                            </button>
+                            <button type="button" id="cancelEditBtn" class="hidden px-4 py-3.5 rounded-xl bg-slate-800 text-slate-300 hover:bg-slate-700 text-xs font-bold transition">
+                                キャンセル
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Registered Items List Card -->
+                <div class="bg-[#0f172a] border border-slate-800 rounded-2xl p-4 shadow-xl">
+                    <div class="flex items-center justify-between mb-3 border-b border-slate-800 pb-2">
+                        <h3 class="text-sm font-bold text-slate-200 flex items-center gap-1.5">
+                            <i data-lucide="list" class="w-4 h-4 text-amber-400"></i>
+                            登録中の品目一覧 (<span id="itemCount">0</span>)
+                        </h3>
+                    </div>
+
+                    <div id="itemList" class="space-y-2">
+                        <!-- Empty State -->
+                        <div id="emptyState" class="text-center py-6 text-slate-500 space-y-2">
+                            <i data-lucide="package-open" class="w-8 h-8 mx-auto stroke-1"></i>
+                            <p class="text-xs">登録されている品目はありません。<br>上のフォームから計算したい危険物を追加してください。</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+        <!-- ================= TAB 2: DESIGNATED QUANTITY TABLE (一覧表) ================= -->
+        <div id="tabTableContent" class="space-y-4 hidden">
+            <!-- 1. Fixed Top Header for Table Tab -->
+            <header id="tableHeader" class="fixed top-0 left-0 right-0 z-50 max-w-md mx-auto px-2 sm:px-4 pt-2 space-y-2 bg-transparent pointer-events-none">
+                <!-- Shared Navigation Tabs -->
+                <div class="pointer-events-auto flex bg-slate-950/95 p-1 rounded-xl border border-slate-800 text-xs font-bold shadow-xl backdrop-blur-md">
+                    <button type="button" onclick="switchTab('calc')" class="flex-1 py-2 rounded-lg text-slate-400 hover:text-slate-200 transition flex items-center justify-center gap-1.5">
+                        <i data-lucide="calculator" class="w-4 h-4"></i> 倍数計算機
+                    </button>
+                    <button type="button" onclick="switchTab('table')" class="flex-1 py-2 rounded-lg text-amber-400 bg-slate-800 border border-slate-700 transition flex items-center justify-center gap-1.5 shadow">
+                        <i data-lucide="book-open" class="w-4 h-4"></i> 指定数量一覧表
+                    </button>
+                </div>
+
+                <!-- Table Search Filter Card -->
+                <div class="pointer-events-auto bg-[#0f172a] border border-slate-800 rounded-2xl p-3 shadow-2xl relative">
+                    <div class="relative">
+                        <i data-lucide="search" class="w-4 h-4 absolute left-3 top-3 text-slate-500"></i>
+                        <input type="text" id="tableSearchInput" placeholder="品名や類別で絞り込み (例: 第4類, アセトン)"
+                               class="w-full bg-slate-950 border border-slate-700 rounded-xl pl-9 pr-3 py-2.5 text-slate-100 focus:outline-none focus:border-amber-400">
+                    </div>
+                </div>
+            </header>
+
+            <!-- 2. Table Tab Content -->
+            <div class="space-y-4 pt-32">
+                <!-- Normal Total Multiplier Card -->
+                <div class="bg-[#0f172a] border border-slate-800 rounded-2xl p-4 shadow-xl relative overflow-hidden">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-2.5">
+                            <div class="w-9 h-9 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 flex-shrink-0">
+                                <i data-lucide="flame" class="w-5 h-5"></i>
+                            </div>
+                            <div>
+                                <span class="text-xs text-slate-400 font-medium block">現在の合計倍数</span>
+                                <div id="tableTabTotalMultiplier" class="text-xl font-black text-emerald-400 mt-0.5 font-mono">
+                                    0.000 <span class="text-xs font-normal text-slate-400">倍</span>
+                                </div>
+                            </div>
+                        </div>
+                        <span id="tableTabStatusBadge" class="text-[11px] font-bold px-2.5 py-1 rounded-full bg-emerald-950/80 text-emerald-400 border border-emerald-800/60">
+                            少量危険物未満
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Selected Item Quick Detail & Apply Bar -->
+                <div id="tableDetailPanel" class="hidden bg-[#0f172a] border border-amber-500/40 rounded-2xl p-3.5 shadow-xl space-y-2.5">
+                    <div class="flex items-start justify-between gap-2">
+                        <div class="min-w-0">
+                            <div class="text-[10px] font-bold text-amber-400" id="detailCategory">--</div>
+                            <div class="text-sm font-black text-slate-100 truncate" id="detailName">--</div>
+                        </div>
+                        <button type="button" onclick="clearTableDetail()" class="p-1 rounded-lg text-slate-400 hover:text-slate-100 hover:bg-slate-800 transition flex-shrink-0" title="閉じる">
+                            <i data-lucide="x" class="w-3.5 h-3.5"></i>
+                        </button>
+                    </div>
+                    <div class="grid grid-cols-3 gap-2 bg-slate-950/90 border border-slate-800 rounded-xl p-2 text-center font-mono">
+                        <div>
+                            <div class="text-[10px] text-slate-500 font-sans">指定数量</div>
+                            <div id="detailQuantity" class="text-xs font-bold text-amber-300 mt-0.5">--</div>
+                        </div>
+                        <div>
+                            <div class="text-[10px] text-slate-500 font-sans">危険等級</div>
+                            <div id="detailGrade" class="text-xs font-bold text-slate-200 mt-0.5">--</div>
+                        </div>
+                        <div>
+                            <div class="text-[10px] text-slate-500 font-sans">目安比重</div>
+                            <div id="detailSg" class="text-xs font-bold text-sky-300 mt-0.5">--</div>
+                        </div>
+                    </div>
+                    <button type="button" id="applyDetailToCalcBtn" class="w-full py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs shadow transition flex items-center justify-center gap-1.5">
+                        <i data-lucide="calculator" class="w-3.5 h-3.5"></i>
+                        <span>計算機に反映して数量を入力</span>
+                    </button>
+                </div>
+
+                <div class="bg-[#0f172a] border border-slate-800 rounded-2xl p-3.5 shadow-xl">
+                    <div class="flex items-center justify-between mb-2.5">
+                        <h2 class="text-sm font-bold text-slate-200 flex items-center gap-1.5">
+                            <i data-lucide="book-open" class="w-4 h-4 text-amber-400"></i>
+                            消防法別表第一 指定数量一覧
+                        </h2>
+                        <span class="text-[10px] text-slate-500">タップで詳細・反映</span>
+                    </div>
+
+                    <div id="hazmatTableBody" class="divide-y divide-slate-800/80 rounded-xl border border-slate-800 bg-slate-950/60 overflow-hidden">
+                        <!-- Populated dynamically -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ================= SIMPLE CALCULATOR MODAL (普通の電卓) ================= -->
+    <div id="simpleCalcModal" class="fixed inset-0 z-[100] bg-slate-950/80 backdrop-blur-sm hidden items-center justify-center p-4">
+        <div class="w-full max-w-xs bg-[#0f172a] border border-slate-700 rounded-2xl p-4 shadow-2xl space-y-3">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-2.5">
+                <div class="flex items-center gap-2 text-sm font-bold text-slate-100">
+                    <i data-lucide="calculator" class="w-4 h-4 text-amber-400"></i>
+                    <span>電卓</span>
+                </div>
+                <button type="button" onclick="closeSimpleCalc()" class="p-1 rounded-lg text-slate-400 hover:text-slate-100 hover:bg-slate-800 transition">
+                    <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
+            </div>
+
+            <!-- Display -->
+            <div class="bg-slate-950 border border-slate-800 rounded-xl p-3 text-right font-mono">
+                <div id="calcExpression" class="text-[11px] text-slate-500 h-4 truncate"></div>
+                <div id="calcDisplay" class="text-2xl font-black text-slate-100 truncate">0</div>
+            </div>
+
+            <!-- Keypad -->
+            <div class="grid grid-cols-4 gap-1.5 font-mono text-sm font-bold">
+                <button type="button" onclick="calcClear()" class="py-3 rounded-xl bg-slate-800/90 hover:bg-slate-700 text-rose-400 transition">C</button>
+                <button type="button" onclick="calcBackspace()" class="py-3 rounded-xl bg-slate-800/90 hover:bg-slate-700 text-slate-300 transition flex items-center justify-center">
+                    <i data-lucide="delete" class="w-4 h-4"></i>
+                </button>
+                <button type="button" onclick="calcPercent()" class="py-3 rounded-xl bg-slate-800/90 hover:bg-slate-700 text-amber-300 transition">%</button>
+                <button type="button" onclick="calcSetOp('/')" class="py-3 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/30 text-amber-400 transition">÷</button>
+
+                <button type="button" onclick="calcAppendNum('7')" class="py-3 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-100 transition">7</button>
+                <button type="button" onclick="calcAppendNum('8')" class="py-3 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-100 transition">8</button>
+                <button type="button" onclick="calcAppendNum('9')" class="py-3 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-100 transition">9</button>
+                <button type="button" onclick="calcSetOp('*')" class="py-3 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/30 text-amber-400 transition">×</button>
+
+                <button type="button" onclick="calcAppendNum('4')" class="py-3 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-100 transition">4</button>
+                <button type="button" onclick="calcAppendNum('5')" class="py-3 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-100 transition">5</button>
+                <button type="button" onclick="calcAppendNum('6')" class="py-3 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-100 transition">6</button>
+                <button type="button" onclick="calcSetOp('-')" class="py-3 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/30 text-amber-400 transition">−</button>
+
+                <button type="button" onclick="calcAppendNum('1')" class="py-3 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-100 transition">1</button>
+                <button type="button" onclick="calcAppendNum('2')" class="py-3 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-100 transition">2</button>
+                <button type="button" onclick="calcAppendNum('3')" class="py-3 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-100 transition">3</button>
+                <button type="button" onclick="calcSetOp('+')" class="py-3 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/30 text-amber-400 transition">+</button>
+
+                <button type="button" onclick="calcAppendNum('0')" class="col-span-2 py-3 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-100 transition">0</button>
+                <button type="button" onclick="calcAppendNum('.')" class="py-3 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-100 transition">.</button>
+                <button type="button" onclick="calcEquals()" class="py-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black transition">=</button>
+            </div>
+
+            <!-- Apply Result to Amount Input -->
+            <button type="button" onclick="applyCalcToAmount()" class="w-full py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-bold text-amber-400 transition flex items-center justify-center gap-1.5">
+                <i data-lucide="arrow-down-to-line" class="w-3.5 h-3.5"></i>
+                <span>取扱数量に反映</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Script Section -->
+    <script>
+    // 1ファイル完結でホーム画面追加（standalone）を促すインラインManifest生成
+    (function setupInlineManifest() {
+        const iconSvg = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect width='64' height='64' rx='14' fill='%230f172a'/><path d='M34 10c-2 8-10 11-10 21a12 12 0 0 0 24 0c0-7-5-12-9-16-1 3-3 5-5 5 1-4 0-8 0-10z' fill='%23f59e0b'/></svg>`;
+        const manifest = {
+            name: "危険物倍数計算機 & 指定数量一覧",
+            short_name: "危険物計算機",
+            start_url: "./",
+            scope: "./",
+            display: "standalone",
+            background_color: "#090d16",
+            theme_color: "#090d16",
+            icons: [
+                {
+                    src: `data:image/svg+xml,${iconSvg}`,
+                    sizes: "any",
+                    type: "image/svg+xml",
+                    purpose: "any maskable"
+                }
+            ]
+        };
+        const blob = new Blob([JSON.stringify(manifest)], { type: "application/manifest+json" });
+        const link = document.createElement("link");
+        link.rel = "manifest";
+        link.href = URL.createObjectURL(blob);
+        document.head.appendChild(link);
+    })();
+
+    const PRIMARY_PRESETS = [
+        { id: "gasoline", name: "ガソリン", category: "第4類 第1石油類(非水溶性)", grade: "危険等級II", quantity: 200, unit: "L", defaultSg: 0.75 },
+        { id: "kerosene", name: "灯油", category: "第4類 第2石油類(非水溶性)", grade: "危険等級III", quantity: 1000, unit: "L", defaultSg: 0.80 },
+        { id: "diesel", name: "軽油", category: "第4類 第2石油類(非水溶性)", grade: "危険等級III", quantity: 1000, unit: "L", defaultSg: 0.83 },
+        { id: "alcohol", name: "アルコール", category: "第4類 アルコール類", grade: "危険等級II", quantity: 400, unit: "L", defaultSg: 0.79 },
+        { id: "thinner", name: "シンナー (第1石油類相当)", category: "第4類 第1石油類(非水溶性)", grade: "危険等級II", quantity: 200, unit: "L", defaultSg: 0.85 },
+        { id: "heavy_oil", name: "重油", category: "第4類 第3石油類(非水溶性)", grade: "危険等級III", quantity: 2000, unit: "L", defaultSg: 0.87 },
+        { id: "engine_oil", name: "エンジンオイル (第4石油類)", category: "第4類 第4石油類", grade: "危険等級III", quantity: 6000, unit: "L", defaultSg: 0.87 },
+        { id: "vegetable_oil", name: "動植物油類", category: "第4類 動植物油類", grade: "危険等級III", quantity: 10000, unit: "L", defaultSg: 0.92 }
+    ];
+
+    const HAZMAT_DATABASE = [
+        { name: "塩素酸塩類 (塩素酸ナトリウム等)", category: "第1類 酸化性固体", grade: "危険等級I", quantity: 50, unit: "kg", defaultSg: 2.50 },
+        { name: "過塩素酸塩類", category: "第1類 酸化性固体", grade: "危険等級I", quantity: 50, unit: "kg", defaultSg: 2.50 },
+        { name: "無機過酸化物", category: "第1類 酸化性固体", grade: "危険等級I", quantity: 50, unit: "kg", defaultSg: 2.20 },
+        { name: "臭素酸塩類", category: "第1類 酸化性固体", grade: "危険等級II", quantity: 300, unit: "kg", defaultSg: 3.20 },
+        { name: "硝酸塩類 (硝酸アンモニウム等)", category: "第1類 酸化性固体", grade: "危険等級II", quantity: 300, unit: "kg", defaultSg: 1.72 },
+        { name: "過マンガン酸塩類", category: "第1類 酸化性固体", grade: "危険等級II", quantity: 300, unit: "kg", defaultSg: 2.70 },
+        { name: "重クロム酸塩類", category: "第1類 酸化性固体", grade: "危険等級III", quantity: 1000, unit: "kg", defaultSg: 2.68 },
+        { name: "硫化リン", category: "第2類 可燃性固体", grade: "危険等級II", quantity: 100, unit: "kg", defaultSg: 2.03 },
+        { name: "赤リン", category: "第2類 可燃性固体", grade: "危険等級II", quantity: 100, unit: "kg", defaultSg: 2.34 },
+        { name: "硫黄", category: "第2類 可燃性固体", grade: "危険等級II", quantity: 100, unit: "kg", defaultSg: 2.07 },
+        { name: "鉄粉", category: "第2類 可燃性固体", grade: "危険等級III", quantity: 500, unit: "kg", defaultSg: 7.86 },
+        { name: "金属粉 (アルミニウム粉等)", category: "第2類 可燃性固体", grade: "危険等級III", quantity: 500, unit: "kg", defaultSg: 2.70 },
+        { name: "マグネシウム", category: "第2類 可燃性固体", grade: "危険等級III", quantity: 500, unit: "kg", defaultSg: 1.74 },
+        { name: "引火性固体 (固形燃料等)", category: "第2類 可燃性固体", grade: "危険等級III", quantity: 1000, unit: "kg", defaultSg: 1.00 },
+        { name: "カリウム", category: "第3類 自然発火性・禁水性", grade: "危険等級I", quantity: 10, unit: "kg", defaultSg: 0.86 },
+        { name: "ナトリウム", category: "第3類 自然発火性・禁水性", grade: "危険等級I", quantity: 10, unit: "kg", defaultSg: 0.97 },
+        { name: "黄リン", category: "第3類 自然発火性・禁水性", grade: "危険等級I", quantity: 20, unit: "kg", defaultSg: 1.82 },
+        { name: "アルキルアルミニウム", category: "第3類 自然発火性・禁水性", grade: "危険等級I", quantity: 10, unit: "kg", defaultSg: 0.80 },
+        { name: "カーバイド (炭化カルシウム)", category: "第3類 自然発火性・禁水性", grade: "危険等級II", quantity: 300, unit: "kg", defaultSg: 2.22 },
+        { name: "特殊引火物 (ジエチルエーテル, 二硫化炭素等)", category: "第4類 特殊引火物", grade: "危険等級I", quantity: 50, unit: "L", defaultSg: 0.71 },
+        { name: "ガソリン", category: "第4類 第1石油類(非水溶性)", grade: "危険等級II", quantity: 200, unit: "L", defaultSg: 0.75 },
+        { name: "アセトン (水溶性)", category: "第4類 第1石油類(水溶性)", grade: "危険等級II", quantity: 400, unit: "L", defaultSg: 0.79 },
+        { name: "ベンゼン / トルエン / シンナー", category: "第4類 第1石油類(非水溶性)", grade: "危険等級II", quantity: 200, unit: "L", defaultSg: 0.87 },
+        { name: "アルコール類 (エタノール, メタノール等)", category: "第4類 アルコール類", grade: "危険等級II", quantity: 400, unit: "L", defaultSg: 0.79 },
+        { name: "灯油", category: "第4類 第2石油類(非水溶性)", grade: "危険等級III", quantity: 1000, unit: "L", defaultSg: 0.80 },
+        { name: "軽油", category: "第4類 第2石油類(非水溶性)", grade: "危険等級III", quantity: 1000, unit: "L", defaultSg: 0.83 },
+        { name: "酢酸 (水溶性)", category: "第4類 第2石油類(水溶性)", grade: "危険等級III", quantity: 2000, unit: "L", defaultSg: 1.05 },
+        { name: "重油", category: "第4類 第3石油類(非水溶性)", grade: "危険等級III", quantity: 2000, unit: "L", defaultSg: 0.87 },
+        { name: "クレオソート油", category: "第4類 第3石油類(非水溶性)", grade: "危険等級III", quantity: 2000, unit: "L", defaultSg: 1.05 },
+        { name: "グリセリン / エチレングリコール (水溶性)", category: "第4類 第3石油類(水溶性)", grade: "危険等級III", quantity: 4000, unit: "L", defaultSg: 1.26 },
+        { name: "エンジンオイル / ギヤ油 / 潤滑油", category: "第4類 第4石油類", grade: "危険等級III", quantity: 6000, unit: "L", defaultSg: 0.87 },
+        { name: "動植物油類 (サラダ油, 亜麻仁油等)", category: "第4類 動植物油類", grade: "危険等級III", quantity: 10000, unit: "L", defaultSg: 0.92 },
+        { name: "有機過酸化物 (メチルエチルケトンパーオキサイド等)", category: "第5類 自己反応性物質", grade: "危険等級I", quantity: 10, unit: "kg", defaultSg: 1.17 },
+        { name: "硝酸エステル類 (ニトログリセリン等)", category: "第5類 自己反応性物質", grade: "危険等級I", quantity: 10, unit: "kg", defaultSg: 1.60 },
+        { name: "ニトロ化合物 (TNT等)", category: "第5類 自己反応性物質", grade: "危険等級II", quantity: 200, unit: "kg", defaultSg: 1.65 },
+        { name: "アゾ化合物", category: "第5類 自己反応性物質", grade: "危険等級II", quantity: 200, unit: "kg", defaultSg: 1.30 },
+        { name: "ヒドロキシルアミン", category: "第5類 自己反応性物質", grade: "危険等級II", quantity: 100, unit: "kg", defaultSg: 1.20 },
+        { name: "過酸化水素", category: "第6類 酸化性液体", grade: "危険等級I", quantity: 300, unit: "kg", defaultSg: 1.13 },
+        { name: "硝酸", category: "第6類 酸化性液体", grade: "危険等級I", quantity: 300, unit: "kg", defaultSg: 1.42 },
+        { name: "発煙硫酸", category: "第6類 酸化性液体", grade: "危険等級I", quantity: 300, unit: "kg", defaultSg: 1.90 }
+    ];
+
+    let items = [];
+    let editingItemId = null;
+    let currentInputMode = 'select';
+    let selectedDatabaseItem = null;
+    let inspectedTableItem = null;
+
+    function initLucideIcons() {
+        if (typeof lucide !== 'undefined' && lucide.createIcons) {
+            lucide.createIcons();
+        }
+    }
+
+    function escapeHtml(str) {
+        return String(str).replace(/[&<>"']/g, function(m) {
+            return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m];
+        });
+    }
+
+    function formatShortGrade(grade) {
+        if (!grade) return '';
+        if (grade.includes('III')) return 'III';
+        if (grade.includes('II')) return 'II';
+        if (grade.includes('I')) return 'I';
+        return grade;
+    }
+
+    function getSuggestedSpecificGravity(dbItem, currentUnit) {
+        if (!dbItem) return 1.00;
+        const baseSg = dbItem.defaultSg || 1.00;
+        if (currentUnit === dbItem.unit) {
+            return 1.00;
+        }
+        return baseSg;
+    }
+
+    function calculateItemMultiplier(item) {
+        const amount = parseFloat(item.amount);
+        const designated = parseFloat(item.designated);
+        const sg = parseFloat(item.specificGravity) || 1.0;
+        const unit = item.unit;
+        const targetUnit = item.targetUnit || unit;
+
+        if (isNaN(amount) || isNaN(designated) || designated <= 0 || sg <= 0) {
+            return { multiplier: 0, effectiveAmount: 0, effectiveUnit: unit };
+        }
+
+        let effectiveAmount = amount;
+        let effectiveUnit = unit;
+
+        if (unit === 'L' && targetUnit === 'kg') {
+            effectiveAmount = amount * sg;
+            effectiveUnit = 'kg';
+        } else if (unit === 'kg' && targetUnit === 'L') {
+            effectiveAmount = amount / sg;
+            effectiveUnit = 'L';
+        }
+
+        return {
+            multiplier: effectiveAmount / designated,
+            effectiveAmount: effectiveAmount,
+            effectiveUnit: effectiveUnit
+        };
+    }
+
+    window.switchTab = function(tab) {
+        const calcContent = document.getElementById('tabCalcContent');
+        const tableContent = document.getElementById('tabTableContent');
+
+        if (tab === 'calc') {
+            calcContent.classList.remove('hidden');
+            tableContent.classList.add('hidden');
+            window.scrollTo({ top: 0, behavior: 'instant' });
+        } else {
+            tableContent.classList.remove('hidden');
+            calcContent.classList.add('hidden');
+            window.scrollTo({ top: 0, behavior: 'instant' });
+        }
+        notifyParentHeight();
+    };
+
+    const tableDetailPanel = document.getElementById('tableDetailPanel');
+    const detailCategory = document.getElementById('detailCategory');
+    const detailName = document.getElementById('detailName');
+    const detailQuantity = document.getElementById('detailQuantity');
+    const detailGrade = document.getElementById('detailGrade');
+    const detailSg = document.getElementById('detailSg');
+    const applyDetailToCalcBtn = document.getElementById('applyDetailToCalcBtn');
+
+    window.inspectFromTable = function(encodedName) {
+        const name = decodeURIComponent(encodedName);
+        const found = HAZMAT_DATABASE.find(d => d.name === name);
+        if (!found) return;
+
+        inspectedTableItem = found;
+        detailCategory.textContent = found.category;
+        detailName.textContent = found.name;
+        detailQuantity.textContent = `${found.quantity.toLocaleString()} ${found.unit}`;
+        detailGrade.textContent = found.grade;
+        detailSg.textContent = (found.defaultSg || 1.00).toFixed(2);
+
+        tableDetailPanel.classList.remove('hidden');
+        initLucideIcons();
+        notifyParentHeight();
+    };
+
+    window.clearTableDetail = function() {
+        inspectedTableItem = null;
+        tableDetailPanel.classList.add('hidden');
+        notifyParentHeight();
+    };
+
+    applyDetailToCalcBtn.addEventListener('click', () => {
+        if (!inspectedTableItem) return;
+        const found = inspectedTableItem;
+        clearTableDetail();
+        switchTab('calc');
+
+        const presetIdx = PRIMARY_PRESETS.findIndex(p => p.name === found.name);
+        if (presetIdx !== -1) {
+            setMode('select');
+            presetSelect.value = presetIdx;
+            updatePresetSelection();
+        } else {
+            setMode('manual');
+            manualNameInput.value = found.name;
+            triggerManualAutoDetect();
+        }
+        amountInput.focus();
+    });
+
+    const modeSelectBtn = document.getElementById('modeSelectBtn');
+    const modeManualBtn = document.getElementById('modeManualBtn');
+    const selectModeGroup = document.getElementById('selectModeGroup');
+    const manualModeGroup = document.getElementById('manualModeGroup');
+
+    const presetSelect = document.getElementById('presetSelect');
+    const manualNameInput = document.getElementById('manualNameInput');
+    const autoDetectBadge = document.getElementById('autoDetectBadge');
+    
+    const specCategory = document.getElementById('specCategory');
+    const specGrade = document.getElementById('specGrade');
+    const specQuantity = document.getElementById('specQuantity');
+
+    const amountInput = document.getElementById('amountInput');
+    const unitSelect = document.getElementById('unitSelect');
+    const specificGravityInput = document.getElementById('specificGravityInput');
+    const customDesignatedInput = document.getElementById('customDesignatedInput');
+
+    const convertedAmountText = document.getElementById('convertedAmountText');
+    const previewMultiplierText = document.getElementById('previewMultiplierText');
+    
+    const addForm = document.getElementById('addForm');
+    const submitBtnText = document.getElementById('submitBtnText');
+    const cancelEditBtn = document.getElementById('cancelEditBtn');
+    const formTitleText = document.getElementById('formTitleText');
+
+    const itemList = document.getElementById('itemList');
+    const itemCount = document.getElementById('itemCount');
+    const resetAllBtn = document.getElementById('resetAllBtn');
+
+    const mainTotalMultiplier = document.getElementById('mainTotalMultiplier');
+    const tableTabTotalMultiplier = document.getElementById('tableTabTotalMultiplier');
+    const tableTabStatusBadge = document.getElementById('tableTabStatusBadge');
+    
+    const progressPercentage = document.getElementById('progressPercentage');
+    const progressBar = document.getElementById('progressBar');
+    const regulationNotice = document.getElementById('regulationNotice');
+    const summaryGlow = document.getElementById('summaryGlow');
+
+    const tableSearchInput = document.getElementById('tableSearchInput');
+    const hazmatTableBody = document.getElementById('hazmatTableBody');
+
+    function initApp() {
+        PRIMARY_PRESETS.forEach((preset, idx) => {
+            const opt = document.createElement('option');
+            opt.value = idx;
+            opt.textContent = `${preset.name} (${preset.category})`;
+            presetSelect.appendChild(opt);
+        });
+
+        renderTable(HAZMAT_DATABASE);
+
+        const saved = localStorage.getItem('hazmat_items_v2');
+        if (saved) {
+            try { items = JSON.parse(saved); } catch(e) { items = []; }
+        }
+        updateConversionPreview();
+        updateUI();
+        initLucideIcons();
+    }
+
+    function renderTable(data) {
+        hazmatTableBody.innerHTML = '';
+        if (data.length === 0) {
+            hazmatTableBody.innerHTML = `<div class="p-4 text-center text-xs text-slate-500">該当する危険物は見つかりませんでした。</div>`;
+            return;
+        }
+
+        data.forEach(item => {
+            const shortGrade = formatShortGrade(item.grade);
+            const row = document.createElement('button');
+            row.type = 'button';
+            row.onclick = () => inspectFromTable(encodeURIComponent(item.name));
+            row.className = 'w-full px-3 py-2 flex items-center justify-between gap-2 text-left hover:bg-slate-900/90 active:bg-slate-800/80 transition';
+            row.innerHTML = `
+                <div class="min-w-0 flex-1">
+                    <div class="flex items-center gap-1.5 min-w-0">
+                        <span class="text-xs font-bold text-slate-100 truncate">${escapeHtml(item.name)}</span>
+                        <span class="text-[10px] font-mono px-1.5 py-0.2 rounded bg-slate-800/90 text-slate-300 border border-slate-700/80 flex-shrink-0">${escapeHtml(shortGrade)}</span>
+                    </div>
+                    <div class="text-[10px] text-amber-400/90 truncate mt-0.5">${escapeHtml(item.category)}</div>
+                </div>
+                <div class="text-right font-mono text-xs font-bold text-slate-200 whitespace-nowrap flex-shrink-0">
+                    ${item.quantity.toLocaleString()} <span class="text-[11px] font-normal text-slate-400">${escapeHtml(item.unit)}</span>
+                </div>
+            `;
+            hazmatTableBody.appendChild(row);
+        });
+    }
+
+    modeSelectBtn.addEventListener('click', () => setMode('select'));
+    modeManualBtn.addEventListener('click', () => setMode('manual'));
+
+    function setMode(mode) {
+        currentInputMode = mode;
+        if (mode === 'select') {
+            modeSelectBtn.className = "px-3 py-1 rounded-lg font-bold text-slate-950 bg-amber-400 transition shadow";
+            modeManualBtn.className = "px-3 py-1 rounded-lg font-medium text-slate-400 hover:text-slate-200 transition";
+            selectModeGroup.classList.remove('hidden');
+            manualModeGroup.classList.add('hidden');
+            updatePresetSelection();
+        } else {
+            modeManualBtn.className = "px-3 py-1 rounded-lg font-bold text-slate-950 bg-amber-400 transition shadow";
+            modeSelectBtn.className = "px-3 py-1 rounded-lg font-medium text-slate-400 hover:text-slate-200 transition";
+            manualModeGroup.classList.remove('hidden');
+            selectModeGroup.classList.add('hidden');
+            triggerManualAutoDetect();
+        }
+    }
+
+    presetSelect.addEventListener('change', updatePresetSelection);
+
+    function updatePresetSelection() {
+        const idx = presetSelect.value;
+        if (idx !== "") {
+            const preset = PRIMARY_PRESETS[idx];
+            selectedDatabaseItem = preset;
+            specCategory.textContent = preset.category;
+            specGrade.textContent = preset.grade;
+            specQuantity.textContent = `標準指定数量: ${preset.quantity.toLocaleString()}${preset.unit}`;
+            if (!editingItemId) {
+                customDesignatedInput.value = preset.quantity;
+                unitSelect.value = preset.unit;
+                specificGravityInput.value = getSuggestedSpecificGravity(preset, preset.unit).toFixed(2);
+            }
+        } else {
+            selectedDatabaseItem = null;
+            specCategory.textContent = "--";
+            specGrade.textContent = "危険等級: --";
+            specQuantity.textContent = "標準指定数量: --";
+            if (!editingItemId) {
+                specificGravityInput.value = "1.00";
+            }
+        }
+        updateConversionPreview();
+    }
+
+    manualNameInput.addEventListener('input', triggerManualAutoDetect);
+
+    function triggerManualAutoDetect() {
+        const val = manualNameInput.value.trim().toLowerCase();
+        if (!val) {
+            selectedDatabaseItem = null;
+            autoDetectBadge.classList.add('hidden');
+            specCategory.textContent = "品名未指定（数量・指定数量で計算）";
+            specGrade.textContent = "危険等級: --";
+            specQuantity.textContent = "標準指定数量: --";
+            if (!editingItemId) {
+                specificGravityInput.value = "1.00";
+            }
+            updateConversionPreview();
+            return;
+        }
+
+        const match = HAZMAT_DATABASE.find(item => 
+            item.name.toLowerCase().includes(val) || val.includes(item.name.toLowerCase().split(' ')[0])
+        );
+
+        if (match) {
+            selectedDatabaseItem = match;
+            autoDetectBadge.classList.remove('hidden');
+            specCategory.textContent = match.category;
+            specGrade.textContent = match.grade;
+            specQuantity.textContent = `標準指定数量: ${match.quantity.toLocaleString()}${match.unit}`;
+            if (!editingItemId) {
+                customDesignatedInput.value = match.quantity;
+                unitSelect.value = match.unit;
+                specificGravityInput.value = getSuggestedSpecificGravity(match, match.unit).toFixed(2);
+            }
+        } else {
+            selectedDatabaseItem = null;
+            autoDetectBadge.classList.add('hidden');
+            specCategory.textContent = "手動設定";
+            specGrade.textContent = "危険等級: 個別判定";
+            specQuantity.textContent = "標準指定数量: 任意設定";
+            if (!editingItemId) {
+                specificGravityInput.value = "1.00";
+            }
+        }
+        updateConversionPreview();
+    }
+
+    unitSelect.addEventListener('change', () => {
+        if (!editingItemId) {
+            const suggestedSg = getSuggestedSpecificGravity(selectedDatabaseItem, unitSelect.value);
+            specificGravityInput.value = suggestedSg.toFixed(2);
+        }
+        updateConversionPreview();
+    });
+
+    [amountInput, specificGravityInput, customDesignatedInput].forEach(el => {
+        el.addEventListener('input', updateConversionPreview);
+        el.addEventListener('change', updateConversionPreview);
+    });
+
+    function updateConversionPreview() {
+        const amount = parseFloat(amountInput.value);
+        const designated = parseFloat(customDesignatedInput.value);
+        const sg = parseFloat(specificGravityInput.value) || 1.0;
+        const unit = unitSelect.value;
+        const targetUnit = selectedDatabaseItem ? selectedDatabaseItem.unit : unit;
+
+        if (isNaN(amount) || amount <= 0 || isNaN(designated) || designated <= 0 || sg <= 0) {
+            convertedAmountText.textContent = "--";
+            previewMultiplierText.textContent = "0.0000 倍";
+            return;
+        }
+
+        const calc = calculateItemMultiplier({
+            amount,
+            designated,
+            specificGravity: sg,
+            unit,
+            targetUnit
+        });
+
+        if (unit !== targetUnit) {
+            convertedAmountText.textContent = `${calc.effectiveAmount.toLocaleString(undefined, { maximumFractionDigits: 3 })} ${calc.effectiveUnit}`;
+        } else {
+            convertedAmountText.textContent = `${amount.toLocaleString()} ${unit} (比重 ${sg.toFixed(2)})`;
+        }
+        previewMultiplierText.textContent = `${calc.multiplier.toFixed(4)} 倍`;
+    }
+
+    tableSearchInput.addEventListener('input', () => {
+        const query = tableSearchInput.value.trim().toLowerCase();
+        const filtered = HAZMAT_DATABASE.filter(item => 
+            item.name.toLowerCase().includes(query) || item.category.toLowerCase().includes(query)
+        );
+        renderTable(filtered);
+    });
+
+    addForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+
+        const amount = parseFloat(amountInput.value);
+        const designated = parseFloat(customDesignatedInput.value);
+        const specificGravity = parseFloat(specificGravityInput.value) || 1.0;
+        const unit = unitSelect.value;
+
+        if (isNaN(amount) || isNaN(designated) || designated <= 0 || specificGravity <= 0) return;
+
+        let name = "";
+        let category = "指定数量計算";
+        let grade = "--";
+        let targetUnit = unit;
+
+        if (currentInputMode === 'select' && presetSelect.value !== "") {
+            const preset = PRIMARY_PRESETS[presetSelect.value];
+            name = preset.name;
+            category = preset.category;
+            grade = preset.grade;
+            targetUnit = preset.unit;
+        } else if (currentInputMode === 'manual') {
+            const typedName = manualNameInput.value.trim();
+            if (typedName) {
+                name = typedName;
+                if (selectedDatabaseItem) {
+                    category = selectedDatabaseItem.category;
+                    grade = selectedDatabaseItem.grade;
+                    targetUnit = selectedDatabaseItem.unit;
+                }
+            } else {
+                name = `品名未指定 (${amount.toLocaleString()}${unit} ÷ ${designated.toLocaleString()}${unit})`;
+            }
+        } else {
+            name = `品名未指定 (${amount.toLocaleString()}${unit} ÷ ${designated.toLocaleString()}${unit})`;
+        }
+
+        if (editingItemId) {
+            const index = items.findIndex(i => i.id === editingItemId);
+            if (index !== -1) {
+                items[index] = {
+                    ...items[index],
+                    name, category, grade, amount, designated, specificGravity, unit, targetUnit
+                };
+            }
+            cancelEditMode();
+        } else {
+            items.push({
+                id: Date.now().toString(),
+                name, category, grade, amount, designated, specificGravity, unit, targetUnit
+            });
+        }
+
+        saveAndUpdate();
+        resetFormInput();
+    });
+
+    function resetFormInput() {
+        amountInput.value = '';
+        manualNameInput.value = '';
+        presetSelect.value = '';
+        specificGravityInput.value = '1.00';
+        updatePresetSelection();
+        triggerManualAutoDetect();
+        updateConversionPreview();
+        if (document.activeElement) document.activeElement.blur();
+    }
+
+    window.editItem = function(id) {
+        const item = items.find(i => i.id === id);
+        if (!item) return;
+
+        editingItemId = id;
+        formTitleText.textContent = "品目の編集・修正";
+        submitBtnText.textContent = "変更を保存";
+        cancelEditBtn.classList.remove('hidden');
+
+        const presetIdx = PRIMARY_PRESETS.findIndex(p => p.name === item.name);
+        if (presetIdx !== -1) {
+            setMode('select');
+            presetSelect.value = presetIdx;
+            updatePresetSelection();
+        } else {
+            setMode('manual');
+            manualNameInput.value = item.name.startsWith('品名未指定 ') ? '' : item.name;
+            triggerManualAutoDetect();
+        }
+
+        amountInput.value = item.amount;
+        customDesignatedInput.value = item.designated;
+        specificGravityInput.value = (item.specificGravity || 1.00).toFixed(2);
+        unitSelect.value = item.unit;
+        updateConversionPreview();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    cancelEditBtn.addEventListener('click', cancelEditMode);
+
+    function cancelEditMode() {
+        editingItemId = null;
+        formTitleText.textContent = "危険物の追加登録";
+        submitBtnText.textContent = "計算リストに追加";
+        cancelEditBtn.classList.add('hidden');
+        resetFormInput();
+    }
+
+    window.deleteItem = function(id) {
+        items = items.filter(i => i.id !== id);
+        if (editingItemId === id) cancelEditMode();
+        saveAndUpdate();
+    };
+
+    resetAllBtn.addEventListener('click', () => {
+        items = [];
+        cancelEditMode();
+        saveAndUpdate();
+    });
+
+    function saveAndUpdate() {
+        localStorage.setItem('hazmat_items_v2', JSON.stringify(items));
+        updateUI();
+    }
+
+    function updateUI() {
+        itemCount.textContent = items.length;
+
+        if (items.length === 0) {
+            itemList.innerHTML = `
+                <div id="emptyState" class="text-center py-6 text-slate-500 space-y-2">
+                    <i data-lucide="package-open" class="w-8 h-8 mx-auto stroke-1"></i>
+                    <p class="text-xs">登録されている品目はありません。<br>上のフォームから計算したい危険物を追加してください。</p>
+                </div>`;
+        } else {
+            itemList.innerHTML = items.map(item => {
+                const sg = parseFloat(item.specificGravity) || 1.0;
+                const calc = calculateItemMultiplier(item);
+                const showSgBadge = (sg !== 1.0 || item.unit !== (item.targetUnit || item.unit));
+
+                return `
+                    <div class="bg-slate-950/90 border border-slate-800 rounded-xl p-3 flex items-center justify-between gap-2 transition hover:border-slate-700">
+                        <div class="min-w-0 flex-1">
+                            <div class="flex items-center gap-1.5 flex-wrap">
+                                <span class="font-bold text-sm text-slate-100 truncate">${escapeHtml(item.name)}</span>
+                                <span class="text-[10px] bg-slate-800 text-amber-400 font-medium px-1.5 py-0.5 rounded border border-slate-700">${escapeHtml(item.category)}</span>
+                                ${showSgBadge ? `<span class="text-[10px] bg-sky-950/80 text-sky-300 font-mono px-1.5 py-0.5 rounded border border-sky-800/60">比重 ${sg.toFixed(2)}</span>` : ''}
+                            </div>
+                            <div class="text-xs text-slate-400 mt-1 flex items-center gap-2 font-mono flex-wrap">
+                                <span>数量: <strong class="text-slate-200">${item.amount.toLocaleString()}</strong> ${item.unit}</span>
+                                <span>/ 指定数量: ${item.designated.toLocaleString()}${item.targetUnit || item.unit}</span>
+                            </div>
+                            ${item.unit !== (item.targetUnit || item.unit) ? `
+                                <div class="text-[11px] text-sky-400/90 mt-0.5 font-mono">
+                                    → 換算: ${calc.effectiveAmount.toLocaleString(undefined, { maximumFractionDigits: 3 })} ${calc.effectiveUnit}
+                                </div>
+                            ` : ''}
+                        </div>
+                        <div class="text-right flex items-center gap-3">
+                            <div class="font-mono">
+                                <div class="text-sm font-black text-amber-400">${calc.multiplier.toFixed(4)} <span class="text-[10px] font-normal">倍</span></div>
+                            </div>
+                            <div class="flex items-center gap-1">
+                                <button onclick="editItem('${item.id}')" type="button" class="p-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-amber-400 transition" title="編集">
+                                    <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
+                                </button>
+                                <button onclick="deleteItem('${item.id}')" type="button" class="p-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-rose-400 transition" title="削除">
+                                    <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        const totalMultiplier = items.reduce((sum, item) => sum + calculateItemMultiplier(item).multiplier, 0);
+        const formattedTotal = totalMultiplier.toFixed(3);
+
+        mainTotalMultiplier.innerHTML = `${formattedTotal} <span class="text-xs font-normal text-slate-400">倍</span>`;
+        tableTabTotalMultiplier.innerHTML = `${formattedTotal} <span class="text-xs font-normal text-slate-400">倍</span>`;
+
+        const pct = Math.min(Math.round(totalMultiplier * 100), 100);
+        progressPercentage.textContent = `${pct}%`;
+        progressBar.style.width = `${pct}%`;
+
+        if (totalMultiplier >= 1.0) {
+            progressBar.className = "h-full bg-rose-500 rounded-full transition-all duration-500";
+            mainTotalMultiplier.className = "text-2xl font-black text-rose-400 mt-0.5 font-mono";
+            tableTabTotalMultiplier.className = "text-xl font-black text-rose-400 mt-0.5 font-mono";
+            
+            tableTabStatusBadge.className = "text-[11px] font-bold px-2.5 py-1 rounded-full bg-rose-950/90 text-rose-400 border border-rose-800/80 animate-pulse";
+            tableTabStatusBadge.textContent = "消防法規制対象 (1.0倍以上)";
+
+            regulationNotice.className = "mt-3.5 p-2.5 rounded-xl text-xs flex items-center gap-2 bg-rose-950/40 border border-rose-800/60 text-rose-300 font-medium";
+            regulationNotice.innerHTML = `<i data-lucide="alert-triangle" class="w-4 h-4 flex-shrink-0 text-rose-400"></i><span>指定数量1.0倍以上です。消防法に基づく設置許可・届出が必要です。</span>`;
+            summaryGlow.className = "absolute -top-10 -right-10 w-32 h-32 bg-rose-500/20 rounded-full blur-2xl pointer-events-none transition-colors duration-500";
+        } else if (totalMultiplier >= 0.2) {
+            progressBar.className = "h-full bg-amber-500 rounded-full transition-all duration-500";
+            mainTotalMultiplier.className = "text-2xl font-black text-amber-400 mt-0.5 font-mono";
+            tableTabTotalMultiplier.className = "text-xl font-black text-amber-400 mt-0.5 font-mono";
+
+            tableTabStatusBadge.className = "text-[11px] font-bold px-2.5 py-1 rounded-full bg-amber-950/90 text-amber-400 border border-amber-800/80";
+            tableTabStatusBadge.textContent = "少量危険物対象 (0.2倍以上)";
+
+            regulationNotice.className = "mt-3.5 p-2.5 rounded-xl text-xs flex items-center gap-2 bg-amber-950/40 border border-amber-800/60 text-amber-300 font-medium";
+            regulationNotice.innerHTML = `<i data-lucide="alert-circle" class="w-4 h-4 flex-shrink-0 text-amber-400"></i><span>指定数量の0.2倍以上1.0倍未満です。火災予防条例に基づく届出が必要です。</span>`;
+            summaryGlow.className = "absolute -top-10 -right-10 w-32 h-32 bg-amber-500/20 rounded-full blur-2xl pointer-events-none transition-colors duration-500";
+        } else {
+            progressBar.className = "h-full bg-emerald-500 rounded-full transition-all duration-500";
+            mainTotalMultiplier.className = "text-2xl font-black text-emerald-400 mt-0.5 font-mono";
+            tableTabTotalMultiplier.className = "text-xl font-black text-emerald-400 mt-0.5 font-mono";
+
+            tableTabStatusBadge.className = "text-[11px] font-bold px-2.5 py-1 rounded-full bg-emerald-950/80 text-emerald-400 border border-emerald-800/60";
+            tableTabStatusBadge.textContent = "少量危険物未満";
+
+            regulationNotice.className = "mt-3.5 p-2.5 rounded-xl text-xs flex items-center gap-2 bg-transparent text-emerald-400 font-medium";
+            regulationNotice.innerHTML = `<i data-lucide="check-circle-2" class="w-4 h-4 flex-shrink-0"></i><span>指定数量の0.2倍未満です。特別な届出は不要です。</span>`;
+            summaryGlow.className = "absolute -top-10 -right-10 w-32 h-32 bg-emerald-500/10 rounded-full blur-2xl pointer-events-none transition-colors duration-500";
+        }
+
+        initLucideIcons();
+    }
+
+    // ================= SIMPLE CALCULATOR LOGIC =================
+    const simpleCalcModal = document.getElementById('simpleCalcModal');
+    const calcDisplay = document.getElementById('calcDisplay');
+    const calcExpression = document.getElementById('calcExpression');
+
+    let calcCurrent = '0';
+    let calcPrev = null;
+    let calcOp = null;
+    let calcResetNext = false;
+
+    window.openSimpleCalc = function() {
+        simpleCalcModal.classList.remove('hidden');
+        simpleCalcModal.classList.add('flex');
+        initLucideIcons();
+    };
+
+    window.closeSimpleCalc = function() {
+        simpleCalcModal.classList.add('hidden');
+        simpleCalcModal.classList.remove('flex');
+    };
+
+    function updateCalcDisplay() {
+        calcDisplay.textContent = calcCurrent;
+        const opSymbol = { '+': '+', '-': '−', '*': '×', '/': '÷' }[calcOp] || '';
+        calcExpression.textContent = (calcPrev !== null && calcOp) ? `${calcPrev} ${opSymbol}` : '';
+    }
+
+    window.calcAppendNum = function(num) {
+        if (calcResetNext) {
+            calcCurrent = (num === '.') ? '0.' : num;
+            calcResetNext = false;
+        } else {
+            if (num === '.' && calcCurrent.includes('.')) return;
+            calcCurrent = (calcCurrent === '0' && num !== '.') ? num : calcCurrent + num;
+        }
+        updateCalcDisplay();
+    };
+
+    window.calcClear = function() {
+        calcCurrent = '0';
+        calcPrev = null;
+        calcOp = null;
+        calcResetNext = false;
+        updateCalcDisplay();
+    };
+
+    window.calcBackspace = function() {
+        if (calcResetNext) return;
+        calcCurrent = calcCurrent.length > 1 ? calcCurrent.slice(0, -1) : '0';
+        updateCalcDisplay();
+    };
+
+    window.calcPercent = function() {
+        const val = parseFloat(calcCurrent);
+        if (!isNaN(val)) {
+            calcCurrent = String(val / 100);
+            updateCalcDisplay();
+        }
+    };
+
+    function computeCalc(a, b, op) {
+        if (op === '+') return a + b;
+        if (op === '-') return a - b;
+        if (op === '*') return a * b;
+        if (op === '/') return b !== 0 ? a / b : 0;
+        return b;
+    }
+
+    window.calcSetOp = function(op) {
+        const currentVal = parseFloat(calcCurrent);
+        if (calcPrev !== null && calcOp && !calcResetNext) {
+            const result = computeCalc(calcPrev, currentVal, calcOp);
+            calcPrev = Math.round(result * 1e10) / 1e10;
+            calcCurrent = String(calcPrev);
+        } else if (!isNaN(currentVal)) {
+            calcPrev = currentVal;
+        }
+        calcOp = op;
+        calcResetNext = true;
+        updateCalcDisplay();
+    };
+
+    window.calcEquals = function() {
+        if (calcPrev === null || !calcOp) return;
+        const currentVal = parseFloat(calcCurrent);
+        const result = computeCalc(calcPrev, currentVal, calcOp);
+        calcCurrent = String(Math.round(result * 1e10) / 1e10);
+        calcPrev = null;
+        calcOp = null;
+        calcResetNext = true;
+        updateCalcDisplay();
+    };
+
+    window.applyCalcToAmount = function() {
+        if (calcPrev !== null && calcOp && !calcResetNext) {
+            calcEquals();
+        }
+        const val = parseFloat(calcCurrent);
+        if (!isNaN(val) && val >= 0) {
+            amountInput.value = val;
+            updateConversionPreview();
+        }
+        closeSimpleCalc();
+    };
+
+    function notifyParentHeight() {
+        const height = document.documentElement.scrollHeight;
+        if (window.parent && window.parent !== window) {
+            window.parent.postMessage({ frameHeight: height }, '*');
+        }
+    }
+
+    window.addEventListener('load', () => {
+        initApp();
+        notifyParentHeight();
+    });
+
+    const resizeObserver = new ResizeObserver(() => {
+        notifyParentHeight();
+    });
+    resizeObserver.observe(document.body);
+    </script>
+</body>
+</html>

@@ -7,7 +7,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="危険物倍数計算機">
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230f172a'/%3E%3Cpath d='M34 10c-2 8-10 11-10 21a12 12 0 0 0 24 0c0-7-5-12-9-16-1 3-3 5-5 5 1-4 0-8 0-10z' fill='%23f59e0b'/%3E%3C/svg%3E">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='fg' x1='0' y1='0' x2='0' y2='1'%3E%3Cstop offset='0%25' stop-color='%23fde047'/%3E%3Cstop offset='55%25' stop-color='%23f59e0b'/%3E%3Cstop offset='100%25' stop-color='%23ea580c'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='14' fill='%230f172a'/%3E%3Cpath d='M35 9c1 7-3 12-7 16-3 3-4 6-3 9 2-3 5-5 8-5-4 4-5 10-2 15 3 5 9 8 15 6 7-2 11-9 10-17-1-7-6-13-11-17 1 4-1 7-4 8 2-5 1-11-5-15z' fill='url(%23fg)'/%3E%3Cpath d='M33 34c-4 3-6 7-5 12 1 4 5 6 9 5 4-1 6-5 5-9-1-4-4-6-9-8z' fill='%23fef08a' opacity='0.9'/%3E%3C/svg%3E">
     <title>危険物倍数計算機 & 指定数量一覧</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -154,7 +154,7 @@
                                     <i data-lucide="sparkles" class="w-2.5 h-2.5 inline"></i> 自動判定完了
                                 </span>
                             </div>
-                            <input type="text" id="manualNameInput" placeholder="空欄でもOK（例: アセトン, 動植物油類等）" 
+                            <input type="text" id="manualNameInput" placeholder="空欄でもOK（例: アセトン, 動植物油類等）"
                                    inputmode="kana" lang="ja" autocomplete="off"
                                    class="w-full bg-slate-950 border border-slate-700/80 rounded-xl px-3.5 py-3 text-slate-100 focus:outline-none focus:border-amber-400">
                         </div>
@@ -402,7 +402,7 @@
     <script>
     // 1ファイル完結でホーム画面追加（standalone）を促すインラインManifest生成
     (function setupInlineManifest() {
-        const iconSvg = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect width='64' height='64' rx='14' fill='%230f172a'/><path d='M34 10c-2 8-10 11-10 21a12 12 0 0 0 24 0c0-7-5-12-9-16-1 3-3 5-5 5 1-4 0-8 0-10z' fill='%23f59e0b'/></svg>`;
+        const iconSvg = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><defs><linearGradient id='fg' x1='0' y1='0' x2='0' y2='1'><stop offset='0%25' stop-color='%23fde047'/><stop offset='55%25' stop-color='%23f59e0b'/><stop offset='100%25' stop-color='%23ea580c'/></linearGradient></defs><rect width='64' height='64' rx='14' fill='%230f172a'/><path d='M35 9c1 7-3 12-7 16-3 3-4 6-3 9 2-3 5-5 8-5-4 4-5 10-2 15 3 5 9 8 15 6 7-2 11-9 10-17-1-7-6-13-11-17 1 4-1 7-4 8 2-5 1-11-5-15z' fill='url(%23fg)'/><path d='M33 34c-4 3-6 7-5 12 1 4 5 6 9 5 4-1 6-5 5-9-1-4-4-6-9-8z' fill='%23fef08a' opacity='0.9'/></svg>`;
         const manifest = {
             name: "危険物倍数計算機 & 指定数量一覧",
             short_name: "危険物計算機",
@@ -619,7 +619,7 @@
     const presetSelect = document.getElementById('presetSelect');
     const manualNameInput = document.getElementById('manualNameInput');
     const autoDetectBadge = document.getElementById('autoDetectBadge');
-    
+
     const specCategory = document.getElementById('specCategory');
     const specGrade = document.getElementById('specGrade');
     const specQuantity = document.getElementById('specQuantity');
@@ -631,7 +631,7 @@
 
     const convertedAmountText = document.getElementById('convertedAmountText');
     const previewMultiplierText = document.getElementById('previewMultiplierText');
-    
+
     const addForm = document.getElementById('addForm');
     const submitBtnText = document.getElementById('submitBtnText');
     const cancelEditBtn = document.getElementById('cancelEditBtn');
@@ -644,7 +644,7 @@
     const mainTotalMultiplier = document.getElementById('mainTotalMultiplier');
     const tableTabTotalMultiplier = document.getElementById('tableTabTotalMultiplier');
     const tableTabStatusBadge = document.getElementById('tableTabStatusBadge');
-    
+
     const progressPercentage = document.getElementById('progressPercentage');
     const progressBar = document.getElementById('progressBar');
     const regulationNotice = document.getElementById('regulationNotice');
@@ -765,7 +765,7 @@
             return;
         }
 
-        const match = HAZMAT_DATABASE.find(item => 
+        const match = HAZMAT_DATABASE.find(item =>
             item.name.toLowerCase().includes(val) || val.includes(item.name.toLowerCase().split(' ')[0])
         );
 
@@ -837,7 +837,7 @@
 
     tableSearchInput.addEventListener('input', () => {
         const query = tableSearchInput.value.trim().toLowerCase();
-        const filtered = HAZMAT_DATABASE.filter(item => 
+        const filtered = HAZMAT_DATABASE.filter(item =>
             item.name.toLowerCase().includes(query) || item.category.toLowerCase().includes(query)
         );
         renderTable(filtered);
@@ -1031,7 +1031,7 @@
             progressBar.className = "h-full bg-rose-500 rounded-full transition-all duration-500";
             mainTotalMultiplier.className = "text-2xl font-black text-rose-400 mt-0.5 font-mono";
             tableTabTotalMultiplier.className = "text-xl font-black text-rose-400 mt-0.5 font-mono";
-            
+
             tableTabStatusBadge.className = "text-[11px] font-bold px-2.5 py-1 rounded-full bg-rose-950/90 text-rose-400 border border-rose-800/80 animate-pulse";
             tableTabStatusBadge.textContent = "消防法規制対象 (1.0倍以上)";
 
